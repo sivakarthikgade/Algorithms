@@ -2,7 +2,6 @@
 public class BinarySearchForRange {
 
 	public BinarySearchForRange() {
-		// TODO Auto-generated constructor stub
 	}
 
 //	public int find(int[] input, int key, int start, int end) {
