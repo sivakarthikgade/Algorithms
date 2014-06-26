@@ -1,0 +1,205 @@
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+public class ShortActivitySelectionProblem {
+
+	List<Activity> activityList;
+	Activity[] A;
+	Map<Integer,Map<Integer,Map<Integer,Solution>>> ASP;
+	
+	public ShortActivitySelectionProblem() {
+		activityList = new ArrayList<Activity>();
+	}
+	
+	public void orderActivitiesByFinishTime() {
+		mergeSortByFinishTime(this.activityList, 0, this.activityList.size()-1);
+		A = new Activity[activityList.size()+1];
+		
+		for(int i = 1; i <= activityList.size(); i++) {
+			A[i] = this.activityList.get(i-1);
+			log(A[i].s+" , "+A[i].f+" , "+A[i].p);
+		}
+	}
+	
+	public void calculateMaxProfit() {
+		for(int i = 1; i < A.length; i++) {
+
+			for(int j = 0; j < i; j++) {				//Setting solutions at i-1 into i. Sort of defaulting values.
+				for(int k = 0; k < i; k++) {
+					if(ASP.get(i-1) != null && ASP.get(i-1).get(j) != null && ASP.get(i-1).get(j).get(k) != null) {
+						if(ASP.get(i) == null) {
+							ASP.put(i, new HashMap<Integer,Map<Integer,Solution>>());
+						}
+						if(ASP.get(i).get(j) == null) {
+							ASP.get(i).put(j, new HashMap<Integer,Solution>());
+						}
+						ASP.get(i).get(j).put(k,new Solution(ASP.get(i-1).get(j).get(k)));
+						if(ASP.get(i).get(j).get(k).isUsed) {
+							ASP.get(i).get(j).get(k).isUsed = false;
+							int[] prevItem = {i-1,j,k};
+							ASP.get(i).get(j).get(k).setPrevItem(prevItem);
+						}
+					}
+				}
+			}
+			
+			int a = i-1;
+			while(a > 0 && A[a].f > A[i].s) {
+				a--;
+			}
+			if(a > 0) {
+				int isShort = A[i].isShort ? 1 : 0;
+				for(int j = 0; j <= i; j++) {
+					for(int k = 0; k <= i; k++) {
+						if((j-isShort < 0 || k-(1-isShort) < 0))
+								continue;
+						if((j-isShort == 0 && k-(1-isShort) == 0)) {
+							if(ASP.get(i) == null) {
+								ASP.put(i, new HashMap<Integer,Map<Integer,Solution>>());
+							}
+							if(ASP.get(i).get(j) == null) {
+								ASP.get(i).put(j, new HashMap<Integer,Solution>());
+							}
+							if(ASP.get(i).get(j).get(k) == null) {
+								ASP.get(i).get(j).put(k, new Solution());
+							}
+							if(ASP.get(i).get(j).get(k).val < A[i].p) {
+								ASP.get(i).get(j).get(k).val = A[i].p;
+								ASP.get(i).get(j).get(k).tac = 1;
+								ASP.get(i).get(j).get(k).sac = isShort;
+								ASP.get(i).get(j).get(k).lac = (1-isShort);
+								ASP.get(i).get(j).get(k).isUsed = true;
+								ASP.get(i).get(j).get(k).setPrevItem(null);
+							}
+						}
+						if(ASP.get(a).get(j-isShort) != null && ASP.get(a).get(j-isShort).get(k-(1-isShort)) != null) {
+							if(ASP.get(i) == null) {
+								ASP.put(i, new HashMap<Integer,Map<Integer,Solution>>());
+							}
+							if(ASP.get(i).get(j) == null) {
+								ASP.get(i).put(j, new HashMap<Integer,Solution>());
+							}
+							if(ASP.get(i).get(j).get(k) == null) {
+								ASP.get(i).get(j).put(k, new Solution());
+							}
+							if(ASP.get(i).get(j).get(k).val < A[i].p + ASP.get(a).get(j-isShort).get(k-(1-isShort)).val) {
+								ASP.get(i).get(j).get(k).val = A[i].p + ASP.get(a).get(j-isShort).get(k-(1-isShort)).val;
+								ASP.get(i).get(j).get(k).tac = 1 + ASP.get(a).get(j-isShort).get(k-(1-isShort)).tac;
+								ASP.get(i).get(j).get(k).sac = isShort + ASP.get(a).get(j-isShort).get(k-(1-isShort)).sac;
+								ASP.get(i).get(j).get(k).lac = (1-isShort) + ASP.get(a).get(j-isShort).get(k-(1-isShort)).lac;
+								ASP.get(i).get(j).get(k).isUsed = true;
+								int[] prevItem = {a,j-isShort,k-(1-isShort)};
+								ASP.get(i).get(j).get(k).setPrevItem(prevItem);
+							}
+						}
+					}
+				}
+			} else {
+				int j = A[i].isShort ? 1 : 0;
+				if(ASP.get(i) != null && ASP.get(i).get(j) != null && ASP.get(i).get(j).get(1-j) != null) {
+					if(A[i].p > ASP.get(i).get(j).get(1-j).val) {
+						ASP.get(i).get(j).get(1-j).val = A[i].p;
+						ASP.get(i).get(j).get(1-j).tac = 1;
+						ASP.get(i).get(j).get(1-j).sac = j;
+						ASP.get(i).get(j).get(1-j).lac = 1-j;
+						ASP.get(i).get(j).get(1-j).isUsed = true;
+						ASP.get(i).get(j).get(1-j).setPrevItem(null);
+					}
+				} else {
+					if(ASP.get(i) == null) {
+						ASP.put(i, new HashMap<Integer,Map<Integer,Solution>>());
+					}
+					if(ASP.get(i).get(j) == null) {
+						ASP.get(i).put(j, new HashMap<Integer,Solution>());
+					}
+					ASP.get(i).get(j).put(1-j,new Solution(A[i].p, 1, j, 1-j, true, null));
+				}
+			}
+		}
+	}
+	
+	public void printMaxProfitSolution() {
+		int n = activityList.size();
+		int[] soln = new int[2];
+		int maxVal = 0, excess = 0;
+		for(int j = 0; j <= n; j++) {
+			for(int k = 0; k <= n; k++) {
+				if(ASP.get(n).get(j) != null && ASP.get(n).get(j).get(k) != null) {
+					if((maxVal < ASP.get(n).get(j).get(k).val) && (ASP.get(n).get(j).get(k).sac > ASP.get(n).get(j).get(k).lac)) {
+						maxVal = ASP.get(n).get(j).get(k).val;
+						soln[0] = ASP.get(n).get(j).get(k).prevItem[1];
+						soln[1] = ASP.get(n).get(j).get(k).prevItem[2];
+						excess = ASP.get(n).get(j).get(k).sac - ASP.get(n).get(j).get(k).lac;
+					}
+				}
+			}
+		}
+		log("maxVal: "+maxVal+"; excess: "+excess);
+	}
+	
+	private void print(int i, int j) {
+	}
+	
+	public void mergeSortByFinishTime(List<Activity> input, int p, int r) {
+		
+		if(p == r) {
+			return;
+		}
+		
+		int q = (p+r)/2;
+
+		mergeSortByFinishTime(input, p, q);
+		mergeSortByFinishTime(input, q+1, r);
+		
+		mergeByFinishTime(input, p, q, r);
+	}
+
+	public void mergeByFinishTime(List<Activity> input, int p, int q, int r) {
+		int lCnt = 0, rCnt = 0;
+		
+		List<Activity> lList = new ArrayList<Activity>(input.subList(p, q+1));
+		List<Activity> rList = new ArrayList<Activity>(input.subList(q+1, r+1));
+		
+		lList.add(new Activity(-1,Integer.MAX_VALUE,-1));
+		rList.add(new Activity(-1,Integer.MAX_VALUE,-1));
+		
+		for(int i = p; i <= r; i++) {
+			if(lList.get(lCnt).f <= rList.get(rCnt).f) {
+				input.set(i, lList.get(lCnt++));
+			} else {
+				input.set(i, rList.get(rCnt++));
+			}
+		}
+	}
+	
+	public static void main(String[] args) {
+		ShortActivitySelectionProblem prob;
+		int instanceNum = 0;
+		for(int i = 0; i < args.length; i++) {
+			instanceNum++;
+			prob = new ShortActivitySelectionProblem();
+			int activityCnt = Integer.parseInt(args[i]);
+			for(int j = 1; j <= activityCnt; j++) {
+				int s = Integer.parseInt(args[++i]);
+				int f = Integer.parseInt(args[++i]);
+				int p = Integer.parseInt(args[++i]);
+				if(s == 0 && f == 0 && p == 0) {	//Ignoring dummy activity in test input.
+					continue;
+				}
+				prob.activityList.add(new Activity(s, f, p));
+			}
+			prob.ASP = new HashMap<Integer,Map<Integer,Map<Integer,Solution>>>(prob.activityList.size()+1);
+			prob.orderActivitiesByFinishTime();
+			prob.calculateMaxProfit();
+			prob.printMaxProfitSolution();
+		}
+	}
+	
+	private void log(String str) {
+		System.out.println(str);
+	}
+
+}

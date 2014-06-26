@@ -1,0 +1,166 @@
+
+import java.util.ArrayList;
+import java.util.List;
+
+public class ShortActivitySelectionProblem {
+
+	List<Activity> activityList;
+	Activity[] A;
+	int[][] ASP, TACNT, SACNT, USED, I, J;
+	
+	public ShortActivitySelectionProblem() {
+		activityList = new ArrayList<Activity>();
+	}
+	
+	public void orderActivitiesByFinishTime() {
+		mergeSortByFinishTime(this.activityList, 0, this.activityList.size()-1);
+		A = new Activity[activityList.size()+1];
+		for(int i = 0; i < activityList.size(); i++) {
+			A[i] = this.activityList.get(i);
+//			log("["+(A[i].isShort?"S":"B")+"]"+" "+A[i].s+" "+A[i].f+" "+A[i].p);
+		}
+	}
+	
+	public void calculateMaxProfit() {
+		for(int i = 0; i < activityList.size(); i++) {		//Loop over all activities ordered by finish time
+			for(int j = 0; j < activityList.size(); j++) {			//Loop over min number of short activities limit
+				ASP[i][j] = Integer.MIN_VALUE;
+			}
+		}
+
+		for(int i = 0; i < activityList.size(); i++) {		//Loop over all activities ordered by finish time
+			for(int j = 0; j < activityList.size(); j++) {			//Loop over min number of short activities limit
+				if(i >= j) {
+					int p, q;
+					p = i - 1;
+					for(q = j; q <= i-1 && SACNT[p][q] >= q; q++) {			//Setting the initial value to previous maximum (not considering the current activity initially)
+						if(ASP[i][j] < ASP[p][q]) {
+							ASP[i][j] = ASP[p][q];
+							TACNT[i][j] = TACNT[p][q];
+							SACNT[i][j] = SACNT[p][q];
+							USED[i][j] = 0;
+							I[i][j] = p;
+							J[i][j] = q;
+						}
+					}
+					
+					while(p >= 0 && A[p].f > A[i].s)
+						p--;
+					
+					if(p >= 0) {
+						for(q = (j==0?0:(j - (A[i].isShort?1:0))); q <= p && SACNT[p][q] >= q; q++) {
+							if(ASP[i][j] < A[i].p + (ASP[p][q]>Integer.MIN_VALUE?ASP[p][q]:0)) {
+								ASP[i][j] = A[i].p + (ASP[p][q]>Integer.MIN_VALUE?ASP[p][q]:0);
+								TACNT[i][j] = 1 + TACNT[p][q];
+								SACNT[i][j] = (A[i].isShort?1:0) + SACNT[p][q];
+								USED[i][j] = 1;
+								I[i][j] = p;
+								J[i][j] = q;
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+	
+	public void printMaxProfitCombination() {
+		int i = activityList.size()-1, maxJ = 0, maxVal=0, maxTACNT = 0, maxSACNT = 0;
+		for(int j = 0; j < activityList.size(); j++) {
+			if(SACNT[i][j] > TACNT[i][j] - SACNT[i][j]) {
+				if(maxVal < ASP[i][j]) {
+					maxJ = j;
+					maxVal = ASP[i][j];
+					maxTACNT = TACNT[i][j];
+					maxSACNT = SACNT[i][j];
+				}
+			}
+		}
+		
+//		for(int j = 0; j <= 4; j++) {
+//			log("(4,"+j+"): "+ASP[4][j]+" "+I[4][j] + " " + J[4][j] + ". Used: " + USED[I[4][j]][J[4][j]]);
+//		}
+		
+//		log("#3 Values# "+A[3].p+":"+(A[3].isShort?1:0)+":"+ASP[3][0]+","+TACNT[3][0]+","+SACNT[3][0]+","+USED[3][0]+";"+ASP[3][1]+","+TACNT[3][1]+","+SACNT[3][1]+","+USED[3][1]+";"
+//				+ASP[3][2]+","+TACNT[3][2]+","+SACNT[3][2]+","+USED[3][2]+";"+ASP[3][3]+","+TACNT[3][3]+","+SACNT[3][3]+","+USED[3][3]+";");
+		
+		log("Profit = "+maxVal);
+		log("Excess small = "+(maxSACNT-(maxTACNT-maxSACNT)));
+		
+		print(i, maxJ);
+	}
+	
+	private void print(int i, int j) {
+		if(i <= 0 && j <= 0) {
+			return;
+		}
+		
+		if(USED[i][j] == 1) {
+			log("["+(A[i].isShort?"S":"B")+"]"+" "+A[i].s+" "+A[i].f+" "+A[i].p);
+//			log("["+(A[i].isShort?"S":"B")+"]"+" "+A[i].s+" "+A[i].f+" "+A[i].p+". ("+ SACNT[i][j]+","+(TACNT[i][j]-SACNT[i][j])+") Next Element: "+I[i][j]+" "+J[i][j]);
+		}
+		print(I[i][j], J[i][j]);
+	}
+	
+	public void mergeSortByFinishTime(List<Activity> input, int p, int r) {
+		
+		if(p == r) {
+			return;
+		}
+		
+		int q = (p+r)/2;
+
+		mergeSortByFinishTime(input, p, q);
+		mergeSortByFinishTime(input, q+1, r);
+		
+		mergeByFinishTime(input, p, q, r);
+	}
+
+	public void mergeByFinishTime(List<Activity> input, int p, int q, int r) {
+		int lCnt = 0, rCnt = 0;
+		
+		List<Activity> lList = new ArrayList<Activity>(input.subList(p, q+1));
+		List<Activity> rList = new ArrayList<Activity>(input.subList(q+1, r+1));
+		
+		lList.add(new Activity(-1,Integer.MAX_VALUE,-1));
+		rList.add(new Activity(-1,Integer.MAX_VALUE,-1));
+		
+		for(int i = p; i <= r; i++) {
+			if(lList.get(lCnt).f < rList.get(rCnt).f) {
+				input.set(i, lList.get(lCnt++));
+			} else {
+				input.set(i, rList.get(rCnt++));
+			}
+		}
+	}
+	
+	public static void main(String[] args) {
+		ShortActivitySelectionProblem prob;
+		int instanceNum = 0;
+		for(int i = 0; i < args.length; i++) {
+			instanceNum++;
+			prob = new ShortActivitySelectionProblem();
+			int activityCnt = Integer.parseInt(args[i]);
+			for(int j = 1; j <= activityCnt; j++) {
+				int s = Integer.parseInt(args[++i]);
+				int f = Integer.parseInt(args[++i]);
+				int p = Integer.parseInt(args[++i]);
+				prob.activityList.add(new Activity(s, f, p));
+			}
+			prob.ASP = new int[prob.activityList.size()][prob.activityList.size()];
+			prob.TACNT = new int[prob.activityList.size()][prob.activityList.size()];
+			prob.SACNT = new int[prob.activityList.size()][prob.activityList.size()];
+			prob.USED = new int[prob.activityList.size()][prob.activityList.size()];
+			prob.I = new int[prob.activityList.size()][prob.activityList.size()];
+			prob.J = new int[prob.activityList.size()][prob.activityList.size()];
+			prob.orderActivitiesByFinishTime();
+			prob.calculateMaxProfit();
+			prob.printMaxProfitCombination();
+		}
+	}
+	
+	private void log(String str) {
+		System.out.println(str);
+	}
+
+}

@@ -1,0 +1,156 @@
+
+import java.util.ArrayList;
+import java.util.List;
+
+public class ShortActivitySelectionProblem {
+
+	List<Activity> activityList;
+	Activity[] A;
+	int[][] ASP;
+	
+	public ShortActivitySelectionProblem() {
+		activityList = new ArrayList<Activity>();
+	}
+	
+	public void calculateMaxProfit() {
+
+		mergeSortByFinishTime(this.activityList, 0, this.activityList.size()-1);
+		A = new Activity[activityList.size()];
+		for(int i = 0; i < A.length; i++) {
+			A[i] = this.activityList.get(i);
+//			log(A[i].s + " " + A[i].f + " " + A[i].p);
+		}
+		
+		ASP[0][0] = A[0].p;
+		ASP[0][1] = 1;
+		ASP[0][2] = A[0].isShort ? 1 : 0;
+		ASP[0][3] = 1;
+		ASP[0][4] = -1;
+		ASP[0][5] = A[0].isShort ? A[0].p : 0;
+		ASP[0][6] = A[0].isShort ? 1 : 0;
+		ASP[0][7] = A[0].isShort ? 1 : 0;
+		ASP[0][8] = A[0].isShort ? 1 : 0;
+		ASP[0][9] = -1;
+		ASP[0][10] = -1;
+		for(int i = 1; i < ASP.length; i++) {
+			ASP[i][0] = ASP[i-1][0] < A[i].p ? A[i].p : ASP[i-1][0];
+			ASP[i][1] = ASP[i-1][0] < A[i].p ? 1 : ASP[i-1][1];
+			ASP[i][2] = ASP[i-1][0] < A[i].p ? (A[i].isShort?1:0) : ASP[i-1][2];
+			ASP[i][3] = ASP[i-1][0] < A[i].p ? 1 : 0;
+			ASP[i][4] = ASP[i-1][0] < A[i].p ? -1 : i-1;
+			ASP[i][5] = ((ASP[i-1][2] > ASP[i-1][1] - ASP[i-1][2] ? ASP[i-1][0] : ASP[i-1][5]) < (A[i].isShort ? A[i].p : 0)) ? (A[i].isShort ? A[i].p : 0) : (ASP[i-1][2] > ASP[i-1][1] - ASP[i-1][2] ? ASP[i-1][0] : ASP[i-1][5]);
+			ASP[i][6] = ((ASP[i-1][2] > ASP[i-1][1] - ASP[i-1][2] ? ASP[i-1][0] : ASP[i-1][5]) < (A[i].isShort ? A[i].p : 0)) ? (A[i].isShort ? 1 : 0) : (ASP[i-1][2] > ASP[i-1][1] - ASP[i-1][2] ? ASP[i-1][1] : ASP[i-1][6]); 
+			ASP[i][7] = ((ASP[i-1][2] > ASP[i-1][1] - ASP[i-1][2] ? ASP[i-1][0] : ASP[i-1][5]) < (A[i].isShort ? A[i].p : 0)) ? (A[i].isShort ? 1 : 0) : (ASP[i-1][2] > ASP[i-1][1] - ASP[i-1][2] ? ASP[i-1][2] : ASP[i-1][7]);
+			ASP[i][8] = ((ASP[i-1][2] > ASP[i-1][1] - ASP[i-1][2] ? ASP[i-1][0] : ASP[i-1][5]) < (A[i].isShort ? A[i].p : 0)) ? (A[i].isShort ? 1 : 0) : 0;
+			ASP[i][9] = ((ASP[i-1][2] > ASP[i-1][1] - ASP[i-1][2] ? ASP[i-1][0] : ASP[i-1][5]) < (A[i].isShort ? A[i].p : 0)) ? -1 : i-1;
+			ASP[i][10] = ((ASP[i-1][2] > ASP[i-1][1] - ASP[i-1][2] ? ASP[i-1][0] : ASP[i-1][5]) < (A[i].isShort ? A[i].p : 0)) ? -1 : (ASP[i-1][2] > ASP[i-1][1] - ASP[i-1][2] ? 0 : 1);
+			int j = i-1;
+			while(j >= 0 && A[j].f > A[i].s) {
+				j--;
+			}
+			while(j >= 0) {
+				if(ASP[i][0] < A[i].p + ASP[j][0]) {
+					ASP[i][0] = A[i].p + ASP[j][0];
+					ASP[i][1] = 1 + ASP[j][1];
+					ASP[i][2] = (A[i].isShort ? 1 : 0) + ASP[j][2];
+					ASP[i][3] = 1;
+					ASP[i][4] = j;
+				}
+
+				if(ASP[j][2] + (A[i].isShort ? 1 : 0) > ASP[j][1] + 1 - (ASP[j][2] + (A[i].isShort ? 1 : 0))) {
+					if(ASP[i][5] < A[i].p + ASP[j][0]) {
+						ASP[i][5] = A[i].p + ASP[j][0];
+						ASP[i][6] = 1 + ASP[j][1];
+						ASP[i][7] = (A[i].isShort ? 1 : 0) + ASP[j][2];
+						ASP[i][8] = 1;
+						ASP[i][9] = j;
+						ASP[i][10] = 0;
+					}
+				} else if(ASP[j][7] + (A[i].isShort ? 1 : 0) > ASP[j][6] + 1 - (ASP[j][7] + (A[i].isShort ? 1 : 0))) {
+					if(ASP[i][5] < A[i].p + ASP[j][5]) {
+						ASP[i][5] = A[i].p + ASP[j][5];
+						ASP[i][6] = 1 + ASP[j][6];
+						ASP[i][7] = (A[i].isShort ? 1 : 0) + ASP[j][7];
+						ASP[i][8] = 1;
+						ASP[i][9] = j;
+						ASP[i][10] = 1;
+					}
+				}
+				j--;
+			}
+		}
+		
+		int i = 0;
+		for(Activity a: activityList) {
+			log(a.s + " " + a.f + " " + a.p + " " + ASP[i][0] + " " + ASP[i][5]);
+			i++;
+		}
+	}
+	
+	public void mergeSortByFinishTime(List<Activity> input, int p, int r) {
+		
+		if(p == r) {
+			return;
+		}
+		
+		int q = (p+r)/2;
+
+		mergeSortByFinishTime(input, p, q);
+		mergeSortByFinishTime(input, q+1, r);
+		
+		mergeByFinishTime(input, p, q, r);
+	}
+
+	public void mergeByFinishTime(List<Activity> input, int p, int q, int r) {
+		int lCnt = 0, rCnt = 0;
+		
+		List<Activity> lList = new ArrayList<Activity>(input.subList(p, q+1));
+		List<Activity> rList = new ArrayList<Activity>(input.subList(q+1, r+1));
+		
+		lList.add(new Activity(-1,Integer.MAX_VALUE,-1));
+		rList.add(new Activity(-1,Integer.MAX_VALUE,-1));
+		
+		for(int i = p; i <= r; i++) {
+			if(lList.get(lCnt).f < rList.get(rCnt).f) {
+				input.set(i, lList.get(lCnt++));
+			} else {
+				input.set(i, rList.get(rCnt++));
+			}
+		}
+	}
+	
+	public void printMaxProfitCombination(int i, int p) {
+		if((p == 1 ? ASP[i][8] : ASP[i][3]) == 1) {
+			System.out.println("["+(A[i].isShort?"S":"B")+"] " + A[i].s + " " + A[i].f + " " + A[i].p);
+		}
+		if((p == 1 ? ASP[i][9] : ASP[i][4]) > -1) {
+			printMaxProfitCombination(p == 1 ? ASP[i][9] : ASP[i][4], p == 1 ? ASP[i][10] : 0);
+		}
+	}
+	
+	public static void main(String[] args) {
+		ShortActivitySelectionProblem prob;
+		int instanceNum = 0;
+		for(int i = 0; i < args.length; i++) {
+			instanceNum++;
+			prob = new ShortActivitySelectionProblem();
+			int activityCnt = Integer.parseInt(args[i]);
+			for(int j = 1; j <= activityCnt; j++) {
+				int s = Integer.parseInt(args[++i]);
+				int f = Integer.parseInt(args[++i]);
+				int p = Integer.parseInt(args[++i]);
+				prob.activityList.add(new Activity(s, f, p));
+			}
+			prob.ASP = new int[prob.activityList.size()][11];
+			prob.calculateMaxProfit();
+			prob.log("Profit = "+prob.ASP[prob.ASP.length-1][5]);
+			prob.log("Excess small = "+(prob.ASP[prob.ASP.length-1][7] - (prob.ASP[prob.ASP.length-1][6]-prob.ASP[prob.ASP.length-1][7])));
+			prob.printMaxProfitCombination(prob.ASP.length-1, 1);
+		}
+	}
+	
+	private void log(String str) {
+		System.out.println(str);
+	}
+
+}
